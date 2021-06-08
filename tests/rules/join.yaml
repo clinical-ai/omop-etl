@@ -1,0 +1,42 @@
+# ==========================
+# BAZ
+# ==========================
+# id  | alpha | beta | gamma
+# --------------------------
+# 01  |   a   |  4   |   4
+# 12  |   c   |  6   |   5
+
+name: baz
+primary_key:
+  name: id
+  sources:
+    foobar_pk:
+      table: foo2bar
+      columns:
+        foo_id: integer
+        bar_id: integer
+
+columns:
+  - name: alpha
+    tables: [foo, bar, foo2bar]
+    constraints:
+      - foo.id = foo2bar.foo_id
+      - bar.id = foo2bar.bar_id
+    expression: foo.alpha
+    primary_key: foobar_pk
+
+  - name: beta
+    tables: [foo, bar, foo2bar]
+    constraints:
+      - foo.id = foo2bar.foo_id
+      - bar.id = foo2bar.bar_id
+    expression: CASE WHEN foo.beta > bar.beta THEN foo.beta ELSE bar.beta END
+    primary_key: foobar_pk
+
+  - name: gamma
+    tables: [foo, bar, foo2bar]
+    constraints:
+      - foo.id = foo2bar.foo_id
+      - bar.id = foo2bar.bar_id
+    expression: CASE WHEN foo.gamma > bar.gamma THEN foo.gamma ELSE bar.gamma END
+    primary_key: foobar_pk

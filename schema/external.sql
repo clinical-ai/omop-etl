@@ -1,0 +1,50 @@
+CREATE SCHEMA external;
+SET search_path TO external;
+CREATE TABLE person_ethnicity_concept (
+	sourceCode BIGINT,
+	sourceName TEXT,
+	sourceFrequency BIGINT,
+	sourceAutoAssignedConceptIds FLOAT,
+	matchScore FLOAT,
+	mappingStatus TEXT,
+	targetConceptId BIGINT,
+	targetConceptName TEXT,
+	targetVocabularyId TEXT,
+	targetDomainId TEXT,
+	targetStandardConcept TEXT,
+	targetChildCount BIGINT,
+	targetParentCount BIGINT,
+	targetConceptClassId TEXT,
+	targetConceptCode FLOAT,
+	targetValidStartDate FLOAT,
+	targetValidEndDate FLOAT,
+	targetInvalidReason FLOAT
+);
+
+CREATE TABLE facility_postcode (
+	source_facility_cd INTEGER,
+	CODE_SET INTEGER,
+	CDF_MEANING TEXT,
+	DISPLAY TEXT,
+	DISPLAY_KEY TEXT,
+	DESCRIPTION TEXT,
+	target_postcode INTEGER,
+	DEFINITION TEXT,
+	COLLATION_SEQ INTEGER,
+	ACTIVE_TYPE_CD INTEGER,
+	ACTIVE_IND INTEGER,
+	ACTIVE_DT_TM TEXT,
+	INACTIVE_DT_TM REAL,
+	UPDT_DT_TM TEXT,
+	UPDT_ID INTEGER,
+	UPDT_CNT INTEGER,
+	UPDT_TASK INTEGER,
+	UPDT_APPLCTX INTEGER,
+	BEGIN_EFFECTIVE_DT_TM TEXT,
+	END_EFFECTIVE_DT_TM TEXT,
+	DATA_STATUS_CD INTEGER,
+	DATA_STATUS_DT_TM TEXT,
+	DATA_STATUS_PRSNL_ID INTEGER,
+	ACTIVE_STATUS_PRSNL_ID INTEGER,
+	source_organization_id BIGINT
+)

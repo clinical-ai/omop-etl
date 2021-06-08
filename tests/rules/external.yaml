@@ -1,0 +1,28 @@
+# ======================
+# BAZ
+# ======================
+# id  | alpha  | beta
+# ----------------------
+# 0   | vocab1 |  4
+# 1   | vocab2 |  5
+# 2   | vocab3 |  9
+
+name: baz
+primary_key:
+  name: id
+  sources:
+    foo_pk:
+      table: foo
+      columns:
+        id: integer
+
+columns:
+  - name: alpha
+    tables: [foo, external.vocabulary]
+    constraints:
+      - foo.id = external.vocabulary.id
+    expression: external.vocabulary.name
+
+  - name: beta
+    tables: [foo]
+    expression: foo.beta

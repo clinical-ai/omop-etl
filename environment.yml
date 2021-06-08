@@ -1,0 +1,30 @@
+name: omop-etl
+channels:
+  - defaults
+dependencies:
+  - autopep8
+  - black
+  - codecov
+  - coverage
+  - flake8
+  - isort
+  - jsonschema
+  - mypy
+  - pandas
+  - pip>20.1
+  - psycopg2
+  - pydantic
+  - pylint
+  - pytest
+  - python>=3.8
+  - pyyaml
+  - sqlalchemy
+  - tqdm
+  - pip:
+      - fastapi
+      - flake8-black
+      - pytest-postgresql==2.6.1
+      - typer
+      - uvicorn[standard]
+      - xlrd
+      - openpyxl

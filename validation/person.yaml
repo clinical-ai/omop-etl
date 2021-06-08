@@ -1,0 +1,43 @@
+name: PERSON
+
+#   OMOP v6
+# | CDM Field                   | Required | PK  | FK  | FKTable   |
+# | --------------------------- | -------- | --- | --- | --------- |
+# | person_id                   | Yes      | Yes | No  |           |
+# | year_of_birth               | Yes      | No  | No  |           |
+# | death_datetime              | No       |     |     |           |
+# | gender_source_value         | No       | No  | No  |           |
+# | gender_source_concept_id    | Yes      | No  | Yes | CONCEPT   |
+
+primary_key:
+  name: person_id
+  sources:
+    PERSON_PK:
+      table: CERNER.PERSON
+
+      columns:
+        person_id: bigint
+      constraints:
+        - CERNER.PERSON.active_ind=1
+
+columns:
+  - name: year_of_birth
+    tables:
+      - CERNER.PERSON
+    expression: extract(year FROM CERNER.PERSON.birth_dt_tm)
+
+  - name: death_datetime
+    tables:
+      - CERNER.PERSON
+    expression: CERNER.PERSON.deceased_dt_tm
+
+  - name: gender_source_value
+    tables:
+      - CERNER.PERSON
+      - CERNER.CODE_VALUE
+    constraints:
+      - CERNER.PERSON.sex_cd=CERNER.CODE_VALUE.code_value
+    expression: CERNER.CODE_VALUE.display
+
+  - name: gender_source_concept_id
+    constant: "0"

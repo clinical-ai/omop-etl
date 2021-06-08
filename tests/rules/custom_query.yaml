@@ -1,0 +1,28 @@
+variables:
+  foo_table: &foo_table
+    alias: foo
+    query: select * from (values (0, 'a1', 1), (2, 'b1', 3), (4, 'c1', 5)) x(id, alpha, beta)
+
+name: baz
+primary_key:
+  name: id
+  sources:
+    foo:
+      name: foo
+      table: *foo_table
+      columns:
+        id: integer
+
+columns:
+  - name: alpha
+    tables: [*foo_table]
+    expression: foo.alpha
+    primary_key: foo
+
+  - name: beta
+    tables: [*foo_table]
+    expression: foo.beta
+    primary_key: foo
+
+  - name: disabled
+    enabled: false

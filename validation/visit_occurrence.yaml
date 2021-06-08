@@ -1,0 +1,28 @@
+name: VISIT_OCCURRENCE
+
+#   OMOP v6
+# | CDM Field           | Required | PK  | FK  | FKTable |
+# | ------------------- | -------- | --- | --- | ------- |
+# | visit_occurrence_id | Yes      | Yes | No  |         |
+# | person_id           | Yes      | No  | Yes | PERSON  |
+
+primary_key:
+  name: visit_occurrence_id
+  data_type: bigint
+  sources:
+    ENCOUNTER_PK:
+      table: ENCOUNTER
+      columns:
+        encntr_id: bigint
+
+columns:
+  - column:
+    name: person_id
+    data_type: bigint
+    tables:
+      - ENCOUNTER
+    expression: ENCOUNTER.person_id
+    primary_key: ENCOUNTER_PK
+    references:
+      table: person
+      column: PERSON_person_id

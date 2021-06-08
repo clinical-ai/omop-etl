@@ -1,0 +1,22 @@
+name: baz
+primary_key:
+  name: id
+  sources:
+    foo:
+      table: foo
+      columns:
+        id: integer
+
+columns:
+  - column:
+    name: alpha
+    data_type: integer
+    constant: alpha
+  - column:
+    name: beta
+    data_type: integer
+    constant: 1
+  - column:
+    name: gamma
+    data_type: integer
+    constant: 2

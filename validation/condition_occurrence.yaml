@@ -1,0 +1,108 @@
+name: CONDITION_OCCURRENCE
+
+#   OMOP v6
+# | CDM Field                     | Required | PK  | FK  | FKTable          |
+# | ----------------------------- | -------- | --- | --- | ---------------- |
+# | condition_occurrence_id       | Yes      | Yes | No  |                  |
+# | person_id                     | Yes      | No  | Yes | PERSON           |
+# | condition_concept_id          | Yes      | No  | Yes | CONCEPT          |
+
+primary_key:
+  name: condition_occurrence_id
+  sources:
+    DIAGNOSIS_PK:
+      table: CERNER.DIAGNOSIS
+      columns:
+        diagnosis_id: bigint
+    PROBLEM_PK:
+      table: CERNER.PROBLEM
+      columns:
+        problem_instance_id: bigint
+
+columns:
+  - name: person_id
+    enabled: true
+    tables:
+      - CERNER.DIAGNOSIS
+    expression: CERNER.DIAGNOSIS.person_id
+    primary_key: DIAGNOSIS_PK
+    references:
+      table: person
+      column: PERSON_person_id
+
+  - name: person_id
+    enabled: true
+    tables:
+      - CERNER.PROBLEM
+    expression: CERNER.PROBLEM.person_id
+    primary_key: PROBLEM_PK
+    references:
+      table: person
+      column: PERSON_person_id
+
+  # ICD10 mapped to standard vocabulary SNOMED
+  - name: condition_concept_id
+    enabled: true
+    tables:
+      - CERNER.DIAGNOSIS
+      - CERNER.NOMENCLATURE
+      - OMOP.CONCEPT
+      - OMOP.CONCEPT_RELATIONSHIP
+    constraints:
+      - CERNER.DIAGNOSIS.nomenclature_id=CERNER.NOMENCLATURE.nomenclature_id
+      - CERNER.NOMENCLATURE.source_vocabulary_cd=10752
+      - CERNER.NOMENCLATURE.source_identifier_keycap=OMOP.CONCEPT.concept_code
+      - OMOP.CONCEPT.vocabulary_id='ICD10'
+      - OMOP.CONCEPT.concept_id=OMOP.CONCEPT_RELATIONSHIP.concept_id_1
+      - OMOP.CONCEPT_RELATIONSHIP.relationship_id='Maps to'
+    expression: OMOP.CONCEPT_RELATIONSHIP.concept_id_2
+    primary_key: DIAGNOSIS_PK
+
+  # SNOMED
+  - name: condition_concept_id
+    enabled: true
+    tables:
+      - CERNER.DIAGNOSIS
+      - CERNER.NOMENCLATURE
+      - OMOP.CONCEPT
+    constraints:
+      - CERNER.DIAGNOSIS.nomenclature_id=CERNER.NOMENCLATURE.nomenclature_id
+      - CERNER.NOMENCLATURE.source_vocabulary_cd=13837739
+      - substring(CERNER.NOMENCLATURE.concept_cki, position('!' in CERNER.NOMENCLATURE.concept_cki )+1, length(CERNER.NOMENCLATURE.concept_cki))=OMOP.CONCEPT.concept_code
+      - OMOP.CONCEPT.vocabulary_id='SNOMED'
+    expression: OMOP.CONCEPT.concept_id
+    primary_key: DIAGNOSIS_PK
+
+  # ICD10 mapped to standard vocabulary SNOMED
+  - name: condition_concept_id
+    enabled: true
+    tables:
+      - CERNER.PROBLEM
+      - CERNER.NOMENCLATURE
+      - OMOP.CONCEPT
+      - OMOP.CONCEPT_RELATIONSHIP
+      - OMOP.VOCABULARY
+    constraints:
+      - CERNER.PROBLEM.nomenclature_id=CERNER.NOMENCLATURE.nomenclature_id
+      - CERNER.NOMENCLATURE.source_vocabulary_cd=10752
+      - CERNER.NOMENCLATURE.source_identifier_keycap=OMOP.CONCEPT.concept_code
+      - OMOP.CONCEPT.vocabulary_id='ICD10'
+      - OMOP.CONCEPT.concept_id=OMOP.CONCEPT_RELATIONSHIP.concept_id_1
+      - OMOP.CONCEPT_RELATIONSHIP.relationship_id='Maps to'
+    expression: OMOP.CONCEPT_RELATIONSHIP.concept_id_2
+    primary_key: PROBLEM_PK
+
+  # SNOMED
+  - name: condition_concept_id
+    enabled: true
+    tables:
+      - CERNER.PROBLEM
+      - CERNER.NOMENCLATURE
+      - OMOP.CONCEPT
+    constraints:
+      - CERNER.PROBLEM.nomenclature_id=CERNER.NOMENCLATURE.nomenclature_id
+      - CERNER.NOMENCLATURE.source_vocabulary_cd=13837739
+      - substring(CERNER.NOMENCLATURE.concept_cki, position('!' in CERNER.NOMENCLATURE.concept_cki )+1, length(CERNER.NOMENCLATURE.concept_cki))=OMOP.CONCEPT.concept_code
+      - OMOP.CONCEPT.vocabulary_id='SNOMED'
+    expression: OMOP.CONCEPT.concept_id
+    primary_key: PROBLEM_PK

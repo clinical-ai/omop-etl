@@ -1,0 +1,96 @@
+name: LOCATION
+
+#   OMOP v6
+# | CDM Field   | Required | PK  | FK  | FKTable |
+# | ----------- | -------- | --- | --- | ------- |
+# | location_id | Yes      | Yes | No  |         |
+# | state       | No       | No  | No  |         |
+# | zip         | No       | No  | No  |         |
+
+variables:
+  - &FACILITY_TABLE
+    alias: FACILITY_QUERY
+    query: |
+      select distinct on (loc_facility_cd) loc_facility_cd, active_ind
+      from CERNER.ENCOUNTER
+      UNION
+      select distinct on (loc_facility_cd) loc_facility_cd, active_ind
+      from CERNER.ENCNTR_LOC_HIST
+      order by loc_facility_cd
+
+  - &NURSE_UNIT_TABLE
+    alias: NURSE_UNIT_QUERY
+    query: |
+      select distinct on (loc_nurse_unit_cd) loc_nurse_unit_cd, loc_facility_cd, active_ind
+      from CERNER.ENCOUNTER
+      UNION
+      select distinct on (loc_nurse_unit_cd) loc_nurse_unit_cd, loc_facility_cd, active_ind
+      from CERNER.ENCNTR_LOC_HIST
+      order by loc_nurse_unit_cd
+
+primary_key:
+  name: location_id
+  sources:
+    FACILITY_PK:
+      table: *FACILITY_TABLE
+      columns:
+        loc_facility_cd: bigint
+
+    NURSE_UNIT_PK:
+      table: *NURSE_UNIT_TABLE
+      columns:
+        loc_nurse_unit_cd: bigint
+
+    ADDRESS_PK:
+      table: CERNER.ADDRESS
+      columns:
+        address_id: bigint
+
+columns:
+  - name: state
+    enabled: true
+    expression: "'NSW'"
+    tables:
+      - *FACILITY_TABLE
+    primary_key: FACILITY_PK
+
+  - name: state
+    enabled: true
+    expression: "'NSW'"
+    tables:
+      - *NURSE_UNIT_TABLE
+    primary_key: NURSE_UNIT_PK
+
+  - name: state
+    enabled: true
+    tables:
+      - CERNER.ADDRESS
+    expression: ADDRESS.state
+    primary_key: ADDRESS_PK
+
+  - name: zip
+    enabled: true
+    tables:
+      - *FACILITY_TABLE
+      - EXTERNAL.FACILITY_POSTCODE
+    constraints:
+      - FACILITY_QUERY.loc_facility_cd=EXTERNAL.FACILITY_POSTCODE.source_facility_cd
+    expression: EXTERNAL.FACILITY_POSTCODE.target_postcode
+    primary_key: FACILITY_PK
+
+  - name: zip
+    enabled: true
+    tables:
+      - *NURSE_UNIT_TABLE
+      - EXTERNAL.FACILITY_POSTCODE
+    constraints:
+      - NURSE_UNIT_QUERY.loc_facility_cd=EXTERNAL.FACILITY_POSTCODE.source_facility_cd
+    expression: EXTERNAL.FACILITY_POSTCODE.target_postcode
+    primary_key: NURSE_UNIT_PK
+
+  - name: zip
+    enabled: true
+    tables:
+      - CERNER.ADDRESS
+    expression: ADDRESS.zipcode
+    primary_key: ADDRESS_PK

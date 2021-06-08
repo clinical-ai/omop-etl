@@ -1,0 +1,56 @@
+# ==========================
+# BAZ
+# ==========================
+# id  | alpha | beta | gamma
+# --------------------------
+# 1   |   a   |  4   |  2
+# 2   |   c   |  5   |  5
+# 3   |   d   |  9   |  7
+# 4   |   x   |  8   |  3
+# 5   |   a   |  4   |  4
+# 6   |   c   |  6   |  5
+
+name: baz
+
+primary_key:
+  name: id
+  sources:
+    foo_pk:
+      table: foo
+      columns:
+        id: integer
+    bar_pk:
+      table: bar
+      columns:
+        id: integer
+
+columns:
+  - name: alpha
+    tables: [foo]
+    primary_key: foo_pk
+    expression: foo.alpha
+
+  - name: beta
+    tables: [foo]
+    primary_key: foo_pk
+    expression: foo.beta
+
+  - name: gamma
+    tables: [foo]
+    expression: foo.gamma
+    primary_key: foo_pk
+
+  - name: alpha
+    tables: [bar]
+    expression: bar.alpha
+    primary_key: bar_pk
+
+  - name: beta
+    tables: [bar]
+    expression: bar.beta
+    primary_key: bar_pk
+
+  - name: gamma
+    tables: [bar]
+    expression: bar.gamma
+    primary_key: bar_pk

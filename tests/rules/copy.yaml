@@ -1,0 +1,30 @@
+# ==========================
+# BAZ
+# ===================
+# id  | alpha | beta
+# -------------------
+# 0   |   a   |  8
+# 1   |   c   |  4
+# 2   |   d   |  6
+
+name: baz
+primary_key:
+  name: id
+  sources:
+    foo_pk:
+      table: foo
+      columns:
+        id: integer
+
+columns:
+  - name: alpha
+    enabled: true
+    tables: [foo]
+    expression: foo.alpha
+
+  - name: beta
+    tables: [foo, bar]
+    constraints:
+      - foo.id = bar.id
+    primary_key: foo_pk
+    expression: bar.beta
