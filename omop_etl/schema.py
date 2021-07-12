@@ -8,7 +8,7 @@ import yaml
 from fastapi.params import Query
 from pydantic import Field, root_validator, validator
 
-from generation import *
+from omop_etl.generation import *
 
 C = TypeVar("C", bound="BaseModel")
 

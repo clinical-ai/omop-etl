@@ -2,7 +2,7 @@ import os
 import re
 
 import pytest
-from schema import *
+from omop_etl.schema import *
 
 from tests.utils import *
 

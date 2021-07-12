@@ -1,7 +1,7 @@
 import psycopg2
 import pytest
 from pytest_postgresql import factories
-from schema import *
+from omop_etl.schema import *
 
 _PG_CONNECTION = {
     "host": "localhost",

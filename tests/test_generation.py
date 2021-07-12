@@ -1,4 +1,4 @@
-from generation import *
+from omop_etl.generation import *
 
 from tests.utils import *
 

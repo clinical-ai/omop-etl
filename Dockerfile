@@ -10,4 +10,4 @@ ADD . /app
 
 EXPOSE 8000
 
-CMD [ "uvicorn", "main:api", "--host", "0.0.0.0"]
+CMD [ "uvicorn", "omop_etl.api:app", "--host", "0.0.0.0"]

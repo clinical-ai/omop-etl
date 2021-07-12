@@ -2,9 +2,9 @@ import os
 from pathlib import Path
 
 import pytest
+from omop_etl import TargetTable
 from pandas.api.types import is_numeric_dtype
 from pytest_postgresql import factories
-from schema import TargetTable
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
 

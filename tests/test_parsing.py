@@ -2,7 +2,7 @@ import os
 
 import pytest
 from pydantic import ValidationError
-from schema import *
+from omop_etl.schema import *
 
 
 def load_rule(name):
