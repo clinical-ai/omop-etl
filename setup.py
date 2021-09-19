@@ -17,8 +17,6 @@ setup(
         "pandas",
         "psycopg2-binary",
         "pydantic",
-        "pytest-postgresql == 2.6.1",
-        "pytest",
         "pyyaml",
         "sqlalchemy",
         "tqdm",
@@ -26,6 +24,7 @@ setup(
         "uvicorn[standard]",
         "xlrd",
     ],
+    extras_require={"dev": ["pytest-postgresql >= 2.6.1", "pytest"]},
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
