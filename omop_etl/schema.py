@@ -310,6 +310,15 @@ class TargetTable(BaseModel, Translatable):
     name: str
     primary_key: PrimaryKey
     columns: List[Union[DisabledColumn, TargetColumn, ConstantTargetColumn]]
+    default_schema: str = "cerner"
+
+    @property
+    def default_env(self):
+        return {
+            "TargetTable": self.name,
+            "MappingTable": f"mapping.{self.name}",
+            "DefaultSchema": self.default_schema,
+        }
 
     @validator("columns", each_item=True, pre=True)
     def check_add_default_primary_key(cls, col, values, **kwargs):
@@ -354,11 +363,7 @@ class TargetTable(BaseModel, Translatable):
         return "\n".join(stmts)
 
     def translate(self, env: Environment = dict()) -> TranslateResponse:
-        env = {
-            "TargetTable": self.name,
-            "MappingTable": f"mapping.{self.name}",
-            "DefaultSchema": "cerner",
-        }
+        env = self.default_env
         script = list()
         statements, env = self.primary_key.translate(env)
         script.extend(statements)
