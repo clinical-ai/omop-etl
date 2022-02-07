@@ -29,13 +29,32 @@ def compile(
     output: Path = typer.Option(
         "sql", file_okay=False, dir_okay=True, writable=True, readable=True,
     ),
+    one_file: bool = True,
 ):
     if not output.exists():
         output.mkdir()
-    for name, table in load_rules(rules):
-        out_fn = output / f"{name}.sql"
+    if not one_file:
+        for name, table in load_rules(rules):
+            out_fn = output / f"{name}.sql"
+            with out_fn.open("w") as f:
+                f.write(table.get_script())
+    else:
+        script = ""
+        to_process = list()
+
+        for _, table in load_rules(rules):
+            init, env = table.get_initialization()
+            to_process.append((table, env))
+            script += f"{init}\n"
+
+        for table, env in to_process:
+            table: TargetTable = table
+            script += table.get_script(env=env, include_initialization=False)
+            script += "\n"
+
+        out_fn = output / "etl.sql"
         with out_fn.open("w") as f:
-            f.write(table.get_script())
+            f.write(script)
 
 
 @app.command()

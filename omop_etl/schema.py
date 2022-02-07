@@ -357,19 +357,37 @@ class TargetTable(BaseModel, Translatable):
         cols = REQUIRED_FIELDS.get_fields(self.name)
         return [f"DELETE FROM OMOP.{self.name} WHERE {col} is null;" for col in cols]
 
-    def get_script(self):
-        stmts, _ = self.translate()
+    def get_script(
+        self, env=None, include_initialization: bool = True,
+    ):
+        stmts, _ = self.translate(
+            env=env, include_initialization=include_initialization
+        )
         stmts = [stmt.to_sql() for stmt in stmts]
         return "\n".join(stmts)
 
-    def translate(self, env: Environment = dict()) -> TranslateResponse:
-        env = self.default_env
+    def get_initialization(self, env: Environment = None) -> Tuple[str, Environment]:
+        stmts, env = self.translate(
+            env, include_process=False, include_initialization=True
+        )
+        stmts = [stmt.to_sql() for stmt in stmts]
+        return "\n".join(stmts), env
+
+    def translate(
+        self,
+        env: Environment = None,
+        include_initialization: bool = True,
+        include_process: bool = True,
+    ) -> TranslateResponse:
+        env = env or self.default_env
         script = list()
-        statements, env = self.primary_key.translate(env)
-        script.extend(statements)
-        for col in self.columns:
-            statements, _ = col.translate(env)
-            if statements is not None:
-                script.extend(statements)
+        if include_initialization:
+            statements, env = self.primary_key.translate(env)
+            script.extend(statements)
+        if include_process:
+            for col in self.columns:
+                statements, _ = col.translate(env)
+                if statements is not None:
+                    script.extend(statements)
         return script, env
 
