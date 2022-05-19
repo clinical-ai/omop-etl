@@ -59,6 +59,7 @@ columns:
     tables: [event]
     primary_key: event_pk
     references:
-      table: person
-      column: patient_id
+      person:
+        table: patient
+        column: id
     expression: event.patient_id

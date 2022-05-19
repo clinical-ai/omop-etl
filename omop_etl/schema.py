@@ -177,7 +177,7 @@ class TargetColumn(BaseColumn, Translatable):
     constraints: Optional[List[str]]
     expression: str
     primary_key: str
-    references: Optional[ForeignKey]
+    references: Optional[Union[ForeignKey, Dict[str, ForeignKey]]]
 
     class Config:
         @staticmethod
@@ -212,9 +212,17 @@ class TargetColumn(BaseColumn, Translatable):
         exp = self.expression
 
         if self.references is not None:
-            t = Table(self.references.table, "mapping")
+            if isinstance(self.references, ForeignKey):
+                ref_mapping_table = self.references.table
+                ref_mapping_column = self.references.column
+            else:
+                ref_mapping_table, *_ = self.references.keys()
+                ref = self.references[ref_mapping_table]
+                ref_mapping_column = f"{ref.table}_{ref.column}"
+
+            t = Table(ref_mapping_table, "mapping")
             frm.append(t)
-            whr.append(Expression(f"{t.to_sql()}.{self.references.column} = {exp}"))
+            whr.append(Expression(f"{t.to_sql()}.{ref_mapping_column} = {exp}"))
             exp = f"{t.to_sql()}.id"
 
         col = Column(self.name, Table(target_table, "omop"))
