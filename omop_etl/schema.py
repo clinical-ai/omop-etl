@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Un
 
 import pandas as pd
 import pydantic
+from sqlalchemy import table
 import yaml
 from fastapi.params import Query
 from pydantic import Field, root_validator, validator
@@ -66,6 +67,9 @@ class Query(BaseModel):
 
 class TempTable(Query):
     def translate(self, env: Environment) -> TranslateResponse:
+        if "TempTables" not in env:
+            env["TempTables"] = set()
+        env["TempTables"].add(self.alias)
         return [CreateTempTableStatement(alias=self.alias, query=self.query)], env
 
 
@@ -90,6 +94,9 @@ class TableReference(BaseModel, Translatable):
 
         if self.table_schema is not None:
             schema = self.table_schema
+        if self.alias in env["TempTables"]:
+            schema = None
+
         table = Table(self.alias, schema)
 
         return [table], env
@@ -283,7 +290,10 @@ class PrimaryKey(BaseColumn, Translatable):
                 pk_schema = pk.table.table_schema
                 if pk_schema is None:
                     pk_schema = default_schema
-                fq_table_ref = f"{pk_schema}.{table_ref}"
+                if table_ref not in env["TempTables"]:
+                    fq_table_ref = f"{pk_schema}.{table_ref}"
+                else:
+                    fq_table_ref = table_ref
             else:
                 raise ValueError(f"table of type {type(pk.table)} are not supported")
             predicates.extend(
@@ -334,6 +344,7 @@ class TargetTable(BaseModel, Translatable):
             "TargetTable": self.name,
             "MappingTable": f"mapping.{self.name}",
             "DefaultSchema": self.default_schema,
+            "TempTables": set(),
         }
 
     @validator("columns", each_item=True, pre=True)
