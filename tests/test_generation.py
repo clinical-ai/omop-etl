@@ -3,6 +3,19 @@ from omop_etl.generation import *
 from tests.utils import *
 
 
+def test_create_temp_table_generation():
+    table = CreateTempTableStatement(alias="foo", query="select * from bar")
+    expected = "create temp table foo as select * from bar;"
+    assert expected == table.to_sql()
+
+    table = CreateTempTableStatement(
+        alias="foo",
+        query="select * from (values (0::int, 10::numeric), (1::int, 20::numeric)) as t (id, alpha)",
+    )
+    expected = "create temp table foo as select * from (values (0::int, 10::numeric), (1::int, 20::numeric)) as t (id, alpha);"
+    assert expected == table.to_sql()
+
+
 def test_expression_generation():
     target = Expression("foo.id")
     expected = "foo.id"

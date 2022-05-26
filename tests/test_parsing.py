@@ -323,3 +323,40 @@ expression: asd
     """
     with pytest.raises(ValidationError):
         TargetColumn.parse_string(yml)
+
+
+def test_parse_query():
+    yml = """
+    alias: baz
+    query: select * from foo
+    """
+    actual = Query.parse_string(yml)
+    expected = Query(alias="baz", query="select * from foo")
+    assert actual == expected
+
+
+def test_parse_preinit_table():
+    yml = """
+    name: baz
+    pre_init:
+      - alias: baz
+        query: select * from foo
+    primary_key:
+      name: id
+      sources:
+        foo:
+          table: foo
+          columns:
+            id: char
+    columns:
+    - column:
+      tables: [foo]
+      expression: foo.foo_id
+      name: foo_id
+      primary_key: foo
+
+    """
+    table = TargetTable.parse_string(yml)
+    assert table.pre_init is not None
+    assert len(table.pre_init) == 1
+    assert table.pre_init == [TempTable(alias="baz", query="select * from foo")]

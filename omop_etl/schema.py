@@ -64,6 +64,11 @@ class Query(BaseModel):
         return [QueryTable(alias=self.alias, query=self.query)], env
 
 
+class TempTable(Query):
+    def translate(self, env: Environment) -> TranslateResponse:
+        return [CreateTempTableStatement(alias=self.alias, query=self.query)], env
+
+
 class TableReference(BaseModel, Translatable):
     alias: str = Field(alias="alias")
     table_schema: Optional[str] = Field(alias="schema")
@@ -222,6 +227,7 @@ class TargetColumn(BaseColumn, Translatable):
 
             t = Table(ref_mapping_table, "mapping")
             frm.append(t)
+            whr.append(Expression(f"{t.to_sql()}.{ref_mapping_column} is not null"))
             whr.append(Expression(f"{t.to_sql()}.{ref_mapping_column} = {exp}"))
             exp = f"{t.to_sql()}.id"
 
@@ -319,6 +325,8 @@ class TargetTable(BaseModel, Translatable):
     primary_key: PrimaryKey
     columns: List[Union[DisabledColumn, TargetColumn, ConstantTargetColumn]]
     default_schema: str = "cerner"
+    pre_init: Optional[List[TempTable]]
+    post_init: Optional[List[TempTable]]
 
     @property
     def default_env(self):
@@ -366,20 +374,43 @@ class TargetTable(BaseModel, Translatable):
         return [f"DELETE FROM OMOP.{self.name} WHERE {col} is null;" for col in cols]
 
     def get_script(
-        self, env=None, include_initialization: bool = True,
+        self,
+        env: Environment = None,
+        include_initialization: bool = True,
+        include_process: bool = True,
     ):
         stmts, _ = self.translate(
-            env=env, include_initialization=include_initialization
+            env=env,
+            include_initialization=include_initialization,
+            include_process=include_process,
         )
         stmts = [stmt.to_sql() for stmt in stmts]
         return "\n".join(stmts)
 
     def get_initialization(self, env: Environment = None) -> Tuple[str, Environment]:
-        stmts, env = self.translate(
-            env, include_process=False, include_initialization=True
-        )
+        stmts, env = self.translate_initialization(env)
         stmts = [stmt.to_sql() for stmt in stmts]
         return "\n".join(stmts), env
+
+    def translate_initialization(
+        self, env: Environment = None
+    ) -> Tuple[str, Environment]:
+        env = env or self.default_env
+        statements = list()
+        if self.pre_init is not None:
+            for table in self.pre_init:
+                stmt, env = table.translate(env)
+                statements.extend(stmt)
+
+        insert, env = self.primary_key.translate(env)
+        statements.extend(insert)
+
+        if self.post_init is not None:
+            for table in self.post_init:
+                stmt, env = table.translate(env)
+                statements.extend(stmt)
+
+        return statements, env
 
     def translate(
         self,
@@ -390,7 +421,7 @@ class TargetTable(BaseModel, Translatable):
         env = env or self.default_env
         script = list()
         if include_initialization:
-            statements, env = self.primary_key.translate(env)
+            statements, env = self.translate_initialization(env)
             script.extend(statements)
         if include_process:
             for col in self.columns:

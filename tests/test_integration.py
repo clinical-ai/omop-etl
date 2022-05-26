@@ -179,9 +179,20 @@ class TestCustomQueryTable(BaseTable):
     def parse(self):
         return load_table("custom_query.yaml")
 
-    def test_generate_create_statement(self):
+    def test_generate_pre_init(self):
         statements, env = self.translate()
         actual = statements[0].to_sql()
+
+        expected = (
+            "create temp table temp_table_1 as select * from "
+            "(VALUES (0::int, 1::numeric), (1::int, 2::numeric), (2::int, 3::numeric), (3::int, 4::numeric), (4::int, 5::numeric)) as t (id, beta);"
+        )
+
+        assert actual == expected
+
+    def test_generate_create_statement(self):
+        statements, env = self.translate()
+        actual = statements[1].to_sql()
 
         expected = (
             "create table mapping.baz (id serial PRIMARY KEY, foo_id integer null);"
@@ -190,35 +201,55 @@ class TestCustomQueryTable(BaseTable):
         assert actual == expected
 
     def test_generate_insert_statements(self):
-        statements = self.generate()[1:3]
+        statements = self.generate()[2:4]
 
-        expected = "insert into mapping.baz (foo_id) select foo.id as foo_id from (select * from (values (0, 'a1', 1), (2, 'b1', 3), (4, 'c1', 5)) x(id, alpha, beta)) as foo;"
+        expected = (
+            "insert into mapping.baz (foo_id) select foo.id as foo_id "
+            "from (select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id) as foo;"
+        )
         assert statements[0] == expected
 
         expected = "insert into omop.baz (id) select mapping.baz.id from mapping.baz;"
         assert statements[1] == expected
 
     def test_generate_update_statements(self):
-        statements = self.generate()[3:]
+        statements = self.generate()[5:]
 
         expected = (
             "update omop.baz set alpha = foo.alpha "
-            "from mapping.baz, (select * from (values (0, 'a1', 1), (2, 'b1', 3), (4, 'c1', 5)) x(id, alpha, beta)) as foo "
+            "from mapping.baz, (select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id) as foo "
             "where (omop.baz.id = mapping.baz.id) and (foo.id = mapping.baz.foo_id);"
         )
         assert statements[0] == expected
 
         expected = (
             "update omop.baz set beta = foo.beta "
-            "from mapping.baz, (select * from (values (0, 'a1', 1), (2, 'b1', 3), (4, 'c1', 5)) x(id, alpha, beta)) as foo "
+            "from mapping.baz, (select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id) as foo "
             "where (omop.baz.id = mapping.baz.id) and (foo.id = mapping.baz.foo_id);"
         )
         assert statements[1] == expected
 
-    def test_translate_create_statement(self):
+    def test_translate_pre_init(self):
         statements, env = self.translate()
         actual = statements[0]
+        expected = CreateTempTableStatement(
+            alias="temp_table_1",
+            query="select * from (VALUES (0::int, 1::numeric), (1::int, 2::numeric), (2::int, 3::numeric), (3::int, 4::numeric), (4::int, 5::numeric)) as t (id, beta)",
+        )
+        assert isinstance(actual, CreateTempTableStatement)
+        assert actual == expected
 
+        actual = statements[4]
+        expected = CreateTempTableStatement(
+            alias="temp_table_2",
+            query="select mapping.baz.id, temp_table_1.beta from mapping.baz, temp_table_1 where mapping.baz.id = temp_table_1.id",
+        )
+        assert isinstance(actual, CreateTempTableStatement)
+        assert actual == expected
+
+    def test_translate_create_statement(self):
+        statements, env = self.translate()
+        actual = statements[1]
         expected = CreateTableStatement(
             "id", Table("baz", "mapping"), (ColumnDefinition("foo_id", "integer"),)
         )
@@ -226,7 +257,7 @@ class TestCustomQueryTable(BaseTable):
 
     def test_translate_insert_statements(self):
         statements, env = self.translate()
-        statements = statements[1:3]
+        statements = statements[2:4]
         expected = InsertFromStatement(
             ["foo_id"],
             Table("baz", "mapping"),
@@ -235,7 +266,7 @@ class TestCustomQueryTable(BaseTable):
                 [
                     QueryTable(
                         alias="foo",
-                        query="select * from (values (0, 'a1', 1), (2, 'b1', 3), (4, 'c1', 5)) x(id, alpha, beta)",
+                        query="select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id",
                     )
                 ],
             ),
@@ -253,7 +284,7 @@ class TestCustomQueryTable(BaseTable):
 
     def test_translate_update_statements(self):
         statements, env = self.translate()
-        statements = statements[3:]
+        statements = statements[5:]
 
         expected = UpdateStatement(
             column=Column("alpha", Table("baz", "omop")),
@@ -265,7 +296,7 @@ class TestCustomQueryTable(BaseTable):
                 Table("baz", "mapping"),
                 QueryTable(
                     alias="foo",
-                    query="select * from (values (0, 'a1', 1), (2, 'b1', 3), (4, 'c1', 5)) x(id, alpha, beta)",
+                    query="select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id",
                 ),
             ],
         )
@@ -281,7 +312,7 @@ class TestCustomQueryTable(BaseTable):
                 Table("baz", "mapping"),
                 QueryTable(
                     alias="foo",
-                    query="select * from (values (0, 'a1', 1), (2, 'b1', 3), (4, 'c1', 5)) x(id, alpha, beta)",
+                    query="select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id",
                 ),
             ],
         )
@@ -603,15 +634,18 @@ class TestEventTable(BaseTable):
             "from mapping.events, cerner.event, mapping.person",
             "where (omop.events.id = mapping.events.id)",
             "and (cerner.event.id = mapping.events.event_id)",
+            "and (mapping.person.staff_id is not null)",
             "and (mapping.person.staff_id = event.staff_id);",
         ]
         expected = " ".join(expected_parts)
         assert expected == statements[0]
 
         update = "update omop.events set patient_id = mapping.person.id"
-        cond = "and (mapping.person.patient_id = event.patient_id);"
+        cond_a = "and (mapping.person.patient_id is not null)"
+        cond_b = "and (mapping.person.patient_id = event.patient_id);"
         expected_parts[0] = update
-        expected_parts[-1] = cond
+        expected_parts[-2] = cond_a
+        expected_parts[-1] = cond_b
         expected = " ".join(expected_parts)
         assert statements[1] == expected
 
@@ -658,6 +692,7 @@ class TestEventTable(BaseTable):
                 [
                     "omop.events.id = mapping.events.id",
                     "cerner.event.id = mapping.events.event_id",
+                    "mapping.person.staff_id is not null",
                     "mapping.person.staff_id = event.staff_id",
                 ]
             ),
@@ -676,6 +711,7 @@ class TestEventTable(BaseTable):
                 [
                     "omop.events.id = mapping.events.id",
                     "cerner.event.id = mapping.events.event_id",
+                    "mapping.person.patient_id is not null",
                     "mapping.person.patient_id = event.patient_id",
                 ]
             ),
@@ -698,6 +734,7 @@ class TestEventTable(BaseTable):
         insert into mapping.person (id, patient_id) values (3, 100);
         insert into mapping.person (id, patient_id) values (4, 456);
         insert into mapping.person (id, patient_id) values (5, 749);
+        insert into mapping.person (id, patient_id) values (6, 999);
         """
 
         with postgresql.cursor() as cur:
@@ -711,7 +748,7 @@ class TestEventTable(BaseTable):
         cur.execute("SELECT id, staff_id, patient_id FROM omop.events order by id")
         actual = cur.fetchall()
 
-        expected = [(1, 1, 4), (2, 2, 4), (3, 0, 3)]
+        expected = [(1, 1, 4), (2, 2, 4), (3, 0, 3), (4, None, 6)]
 
         assert expected == actual
 

@@ -88,6 +88,15 @@ class CreateTableStatement(Serializable):
 
 
 @dataclass(eq=True)
+class CreateTempTableStatement(Serializable):
+    alias: str
+    query: str
+
+    def to_sql(self):
+        return f"create temp table {self.alias} as {self.query};"
+
+
+@dataclass(eq=True)
 class SelectStatement(Serializable):
     expressions: Tuple[Expression]
     source: Tuple[Table]

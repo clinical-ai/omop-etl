@@ -182,6 +182,7 @@ def test_translate_foreign_key(baz_pk_env):
     whr = Criterion(
         [
             *baz_pk_env["PrimaryKeyConstraints"]["foo_pk"],
+            "mapping.bar.staff_id is not null",
             "mapping.bar.staff_id = foo.staff_id",
         ]
     )

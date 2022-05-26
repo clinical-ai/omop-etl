@@ -42,6 +42,7 @@ insert into staff (id, name) values (457, 'three');
 insert into event (id, staff_id, patient_id) values (0, 456, 456);
 insert into event (id, staff_id, patient_id) values (2, 457, 456);
 insert into event (id, staff_id, patient_id) values (3, 101, 100);
+insert into event (id, staff_id, patient_id) values (4, NULL, 999);
 
 insert into foo2bar (foo_id, bar_id) values (0, 1);
 insert into foo2bar (foo_id, bar_id) values (1, 2);
