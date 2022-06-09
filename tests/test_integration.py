@@ -181,7 +181,7 @@ class TestCustomQueryTable(BaseTable):
 
     def test_generate_pre_init(self):
         statements, env = self.translate()
-        actual = statements[0].to_sql()
+        actual = statements[1].to_sql()
 
         expected = (
             "create temp table temp_table_1 as select * from "
@@ -192,7 +192,7 @@ class TestCustomQueryTable(BaseTable):
 
     def test_generate_create_statement(self):
         statements, env = self.translate()
-        actual = statements[1].to_sql()
+        actual = statements[2].to_sql()
 
         expected = (
             "create table mapping.baz (id serial PRIMARY KEY, foo_id integer null);"
@@ -201,11 +201,11 @@ class TestCustomQueryTable(BaseTable):
         assert actual == expected
 
     def test_generate_insert_statements(self):
-        statements = self.generate()[2:4]
+        statements = self.generate()[3:5]
 
         expected = (
             "insert into mapping.baz (foo_id) select foo.id as foo_id "
-            "from (select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id) as foo;"
+            "from (select x.id, alpha, beta, total_rows() as total from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id) as foo;"
         )
         assert statements[0] == expected
 
@@ -213,25 +213,25 @@ class TestCustomQueryTable(BaseTable):
         assert statements[1] == expected
 
     def test_generate_update_statements(self):
-        statements = self.generate()[5:]
+        statements = self.generate()[6:]
 
         expected = (
             "update omop.baz set alpha = foo.alpha "
-            "from mapping.baz, (select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id) as foo "
+            "from mapping.baz, (select x.id, alpha, beta, total_rows() as total from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id) as foo "
             "where (omop.baz.id = mapping.baz.id) and (foo.id = mapping.baz.foo_id);"
         )
         assert statements[0] == expected
 
         expected = (
             "update omop.baz set beta = foo.beta "
-            "from mapping.baz, (select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id) as foo "
+            "from mapping.baz, (select x.id, alpha, beta, total_rows() as total from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id) as foo "
             "where (omop.baz.id = mapping.baz.id) and (foo.id = mapping.baz.foo_id);"
         )
         assert statements[1] == expected
 
     def test_translate_pre_init(self):
         statements, env = self.translate()
-        actual = statements[0]
+        actual = statements[1]
         expected = CreateTempTableStatement(
             alias="temp_table_1",
             query="select * from (VALUES (0::int, 1::numeric), (1::int, 2::numeric), (2::int, 3::numeric), (3::int, 4::numeric), (4::int, 5::numeric)) as t (id, beta)",
@@ -239,7 +239,7 @@ class TestCustomQueryTable(BaseTable):
         assert isinstance(actual, CreateTempTableStatement)
         assert actual == expected
 
-        actual = statements[4]
+        actual = statements[5]
         expected = CreateTempTableStatement(
             alias="temp_table_2",
             query="select mapping.baz.id, temp_table_1.beta from mapping.baz, temp_table_1 where mapping.baz.id = temp_table_1.id",
@@ -249,7 +249,7 @@ class TestCustomQueryTable(BaseTable):
 
     def test_translate_create_statement(self):
         statements, env = self.translate()
-        actual = statements[1]
+        actual = statements[2]
         expected = CreateTableStatement(
             "id", Table("baz", "mapping"), (ColumnDefinition("foo_id", "integer"),)
         )
@@ -257,7 +257,7 @@ class TestCustomQueryTable(BaseTable):
 
     def test_translate_insert_statements(self):
         statements, env = self.translate()
-        statements = statements[2:4]
+        statements = statements[3:5]
         expected = InsertFromStatement(
             ["foo_id"],
             Table("baz", "mapping"),
@@ -266,7 +266,7 @@ class TestCustomQueryTable(BaseTable):
                 [
                     QueryTable(
                         alias="foo",
-                        query="select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id",
+                        query="select x.id, alpha, beta, total_rows() as total from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id",
                     )
                 ],
             ),
@@ -284,7 +284,7 @@ class TestCustomQueryTable(BaseTable):
 
     def test_translate_update_statements(self):
         statements, env = self.translate()
-        statements = statements[5:]
+        statements = statements[6:]
 
         expected = UpdateStatement(
             column=Column("alpha", Table("baz", "omop")),
@@ -296,7 +296,7 @@ class TestCustomQueryTable(BaseTable):
                 Table("baz", "mapping"),
                 QueryTable(
                     alias="foo",
-                    query="select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id",
+                    query="select x.id, alpha, beta, total_rows() as total from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id",
                 ),
             ],
         )
@@ -312,7 +312,7 @@ class TestCustomQueryTable(BaseTable):
                 Table("baz", "mapping"),
                 QueryTable(
                     alias="foo",
-                    query="select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id",
+                    query="select x.id, alpha, beta, total_rows() as total from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id",
                 ),
             ],
         )

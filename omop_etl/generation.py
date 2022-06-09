@@ -18,6 +18,11 @@ class Statement(Expression):
     pass
 
 
+class Script(Expression):
+    def to_sql(self):
+        return self
+
+
 class Criterion(List[Expression], Serializable):
     def to_sql(self):
         return " and ".join([f"({e})" for e in self])

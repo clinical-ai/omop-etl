@@ -1,3 +1,15 @@
+scripts:
+  - |
+    CREATE OR REPLACE FUNCTION total_rows ()
+    RETURNS integer AS $total$
+    declare
+      total integer;
+    BEGIN
+      SELECT count(*) into total FROM foo;
+      RETURN total;
+    END;
+    $total$ LANGUAGE plpgsql;
+
 pre_init:
   - alias: temp_table_1
     query: select * from (VALUES (0::int, 1::numeric), (1::int, 2::numeric), (2::int, 3::numeric), (3::int, 4::numeric), (4::int, 5::numeric)) as t (id, beta)
@@ -9,7 +21,7 @@ post_init:
 variables:
   foo_table: &foo_table
     alias: foo
-    query: select x.id, alpha, beta from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id
+    query: select x.id, alpha, beta, total_rows() as total from (values (0, 'a1'), (2, 'b1'), (4, 'c1')) x(id, alpha), temp_table_1 where x.id = temp_table_1.id
 
 name: baz
 primary_key:

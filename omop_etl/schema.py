@@ -339,6 +339,7 @@ class TargetTable(BaseModel, Translatable):
     default_schema: str = "cerner"
     pre_init: Optional[List[TempTable]]
     post_init: Optional[List[TempTable]]
+    scripts: Optional[List[str]]
 
     @property
     def default_env(self):
@@ -410,6 +411,9 @@ class TargetTable(BaseModel, Translatable):
     ) -> Tuple[str, Environment]:
         env = env or self.default_env
         statements = list()
+        if self.scripts is not None:
+            for s in self.scripts:
+                statements.append(Script(s))
         if self.pre_init is not None:
             for table in self.pre_init:
                 stmt, env = table.translate(env)
