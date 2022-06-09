@@ -30,6 +30,7 @@ def compile(
         "sql", file_okay=False, dir_okay=True, writable=True, readable=True,
     ),
     one_file: bool = True,
+    drop_tables: bool = False,
 ):
     if not output.exists():
         output.mkdir()
@@ -43,7 +44,9 @@ def compile(
         to_process = list()
 
         for _, table in load_rules(rules):
-            init, env = table.get_initialization()
+            env = table.default_env
+            env["DropTables"] = drop_tables
+            init, env = table.get_initialization(env)
             to_process.append((table, env))
             script += f"{init}\n"
 

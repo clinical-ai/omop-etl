@@ -74,6 +74,17 @@ class ColumnDefinition(Serializable):
 
 
 @dataclass(eq=True)
+class DropTableStatement(Serializable):
+    table: Table
+
+    def to_sql(self):
+        return f"drop table if exists {self.table.to_sql()};"
+
+    def __hash__(self):
+        return hash("drop table") + hash(self.table)
+
+
+@dataclass(eq=True)
 class CreateTableStatement(Serializable):
     primary_key: str
     table: Table

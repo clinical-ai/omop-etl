@@ -259,18 +259,20 @@ class PrimaryKey(BaseColumn, Translatable):
         return sources
 
     def create_table(self, env: Environment):
-
+        stmts = list()
         columns = list()
-        for alias, pk in self.sources.items():
+        for _, pk in self.sources.items():
             table = pk.table.alias
             for col, dtype in pk.columns.items():
                 columns.append(ColumnDefinition(f"{table}_{col}", datatype=dtype))
 
-        return CreateTableStatement(
-            primary_key=self.name,
-            table=Table(env["TargetTable"], "mapping"),
-            columns=columns,
+        table = Table(env["TargetTable"], "mapping")
+        if "DropTables" in env and env["DropTables"]:
+            stmts.append(DropTableStatement(table=table))
+        stmts.append(
+            CreateTableStatement(primary_key=self.name, table=table, columns=columns,)
         )
+        return stmts
 
     def update_environment(self, env: Environment) -> Environment:
         assert "TargetTable" in env
@@ -311,7 +313,7 @@ class PrimaryKey(BaseColumn, Translatable):
         env = self.update_environment(env)
         target_table = env["TargetTable"]
         stmts = list()
-        stmts.append(self.create_table(env))
+        stmts.extend(self.create_table(env))
         for pk, pk_data in self.sources.items():
             stmt, _ = pk_data.translate(env)
             stmts.extend(stmt)

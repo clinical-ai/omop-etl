@@ -29,6 +29,7 @@ def baz_env():
         "TargetTable": "baz",
         "MappingTable": "mapping.baz",
         "DefaultSchema": "cerner",
+        "TempTables": set(),
     }
 
 
@@ -43,6 +44,7 @@ def baz_pk_env():
                 ["omop.baz.id = mapping.baz.id", "cerner.foo.id = mapping.baz.foo_id"]
             )
         },
+        "TempTables": set(),
     }
 
 
@@ -360,7 +362,7 @@ def test_translate_disjoint_pk(table_name: str, pk: str):
         },
     )
 
-    actual = key.create_table({"TargetTable": table_name})
+    actual = key.create_table({"TargetTable": table_name})[0]
     expected = CreateTableStatement(
         pk,
         table=Table(table_name, "mapping"),
