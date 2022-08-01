@@ -78,14 +78,14 @@ class TestCopyTable(BaseTable):
         assert actual == expected
 
     def test_generate_insert_statements(self):
-        statements = self.generate()[1:3]
+        statements = self.generate()
         expected = (
             "insert into mapping.baz (foo_id) select foo.id as foo_id from cerner.foo;"
         )
-        assert statements[0] == expected
+        assert expected in statements
 
         expected = "insert into omop.baz (id) select mapping.baz.id from mapping.baz;"
-        assert statements[1] == expected
+        assert expected in statements
 
     def test_generate_update_statements(self):
         statements = self.generate()[3:]

@@ -1,0 +1,6 @@
+scripts:
+  - TRUE;
+
+pre_init:
+  - alias: temp_table_4
+    query: select * from (VALUES (0::int, 1::numeric), (1::int, 2::numeric), (2::int, 3::numeric), (3::int, 4::numeric), (4::int, 5::numeric)) as t (id, beta)

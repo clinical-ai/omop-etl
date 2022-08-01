@@ -332,14 +332,54 @@ class PrimaryKey(BaseColumn, Translatable):
 AllColumns = Union[TargetColumn, ConstantTargetColumn, DisabledColumn]
 
 
-class TargetTable(BaseModel, Translatable):
-    name: str
-    primary_key: PrimaryKey
-    columns: List[Union[DisabledColumn, TargetColumn, ConstantTargetColumn]]
-    default_schema: str = "cerner"
+class Dependency(BaseModel, Translatable):
+    default_schema: Optional[str] = None
     pre_init: Optional[List[TempTable]]
     post_init: Optional[List[TempTable]]
     scripts: Optional[List[str]]
+    depends_on: Optional[List[str]]
+
+    @property
+    def default_env(self):
+        return {
+            "DefaultSchema": self.default_schema,
+            "TempTables": set(),
+        }
+
+    def translate_pre_init(self, env: Environment = None) -> Tuple[str, Environment]:
+        env = env or self.default_env
+        statements = list()
+        if self.scripts is not None:
+            for s in self.scripts:
+                statements.append(Script(s))
+        if self.pre_init is not None:
+            for table in self.pre_init:
+                stmt, env = table.translate(env)
+                statements.extend(stmt)
+        return statements, env
+
+    def translate_post_init(self, env: Environment = None) -> Tuple[str, Environment]:
+        env = env or self.default_env
+        statements = list()
+        if self.post_init is not None:
+            for table in self.post_init:
+                stmt, env = table.translate(env)
+                statements.extend(stmt)
+        return statements, env
+
+    def translate(self, env: Environment = None) -> TranslateResponse:
+        env = env or self.default_env
+        statements, env = self.translate_pre_init(env)
+        stmts, env = self.translate_post_init(env)
+        statements.extend(stmts)
+        return statements, env
+
+
+class TargetTable(Dependency):
+    name: str
+    primary_key: PrimaryKey
+    columns: List[Union[DisabledColumn, TargetColumn, ConstantTargetColumn]]
+    default_schema: Optional[str] = "cerner"
 
     @property
     def default_env(self):
@@ -410,22 +450,13 @@ class TargetTable(BaseModel, Translatable):
         self, env: Environment = None
     ) -> Tuple[str, Environment]:
         env = env or self.default_env
-        statements = list()
-        if self.scripts is not None:
-            for s in self.scripts:
-                statements.append(Script(s))
-        if self.pre_init is not None:
-            for table in self.pre_init:
-                stmt, env = table.translate(env)
-                statements.extend(stmt)
+        statements, env = self.translate_pre_init(env)
 
         insert, env = self.primary_key.translate(env)
         statements.extend(insert)
 
-        if self.post_init is not None:
-            for table in self.post_init:
-                stmt, env = table.translate(env)
-                statements.extend(stmt)
+        stmts, env = self.translate_post_init(env)
+        statements.extend(stmts)
 
         return statements, env
 

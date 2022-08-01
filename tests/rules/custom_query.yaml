@@ -9,6 +9,8 @@ scripts:
       RETURN total;
     END;
     $total$ LANGUAGE plpgsql;
+depends_on:
+  - dep
 
 pre_init:
   - alias: temp_table_1

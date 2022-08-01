@@ -1,11 +1,14 @@
+from collections import defaultdict
+from email.policy import default
 from pathlib import Path
 from typing import List, Tuple
 
 import psycopg2
+from pydantic import ValidationError
 import typer
 from tqdm import tqdm
 
-from omop_etl.schema import REQUIRED_FIELDS, DisabledColumn, TargetTable
+from omop_etl.schema import REQUIRED_FIELDS, Dependency, DisabledColumn, TargetTable
 
 
 app = typer.Typer()
@@ -16,9 +19,14 @@ def load_rules(rules: Path) -> List[Tuple[str, TargetTable]]:
     for fn in rules.iterdir():
         with fn.open() as f:
             try:
+                s = f.read()
                 name = ".".join(fn.name.split(".")[:-1])
-                tables.append((name, TargetTable.parse_string(f.read())))
+                tables.append((name, TargetTable.parse_string(s)))
+            except ValidationError as ex:
+                name = ".".join(fn.name.split(".")[:-1])
+                tables.append((name, Dependency.parse_string(s)))
             except Exception as ex:
+                raise ex
                 print(f"Failed to processe: {fn}")
     return tables
 
@@ -43,9 +51,33 @@ def compile(
         script = ""
         to_process = list()
 
-        for _, table in load_rules(rules):
+        tables = load_rules(rules)
+
+        deps = filter(lambda x: not isinstance(x[-1], TargetTable), tables)
+        tables = filter(lambda x: isinstance(x[-1], TargetTable), tables)
+        envs = dict()
+        for name, table in deps:
+            print(name)
+            init, env = table.translate()
+            init = [stmt.to_sql() for stmt in init]
+            init = "\n".join(init)
+            script += f"{init}\n"
+            envs[name] = env
+
+        for name, table in tables:
+            # print(name)
             env = table.default_env
             env["DropTables"] = drop_tables
+            if table.depends_on is not None:
+                for dep in table.depends_on:
+                    if dep in envs:
+                        schema = envs[dep]["DefaultSchema"]
+                        if schema is not None:
+                            env["DefaultSchema"] = schema
+                        env["TempTables"] = {
+                            *env["TempTables"],
+                            *envs[dep]["TempTables"],
+                        }
             init, env = table.get_initialization(env)
             to_process.append((table, env))
             script += f"{init}\n"
