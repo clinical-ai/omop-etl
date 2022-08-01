@@ -39,6 +39,11 @@ cd omop-etl
     ```
     conda activate omop-etl
     ```
+4. Install the package
+
+    ```
+    pip install -e .
+    ```
 
 ### Docker 
 
@@ -74,7 +79,7 @@ If you are looking to include the framework in another language you might consid
 
 To compile your YAML files run the following command after changing the paths for the rules and the output. 
  ```
- python main.py compile --rules ./validation --output ./output
+ omop_etl compile --rules ./validation --output ./output
  ```
 
 If you have installed OMOP-ETL with docker then you will need to mount the folders such in the command below which mounts the validation and output folders in the current working directory.
