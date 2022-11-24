@@ -15,7 +15,7 @@ dependencies:
   - psycopg2
   - pydantic
   - pylint
-  - pytest
+  - pytest=6
   - python>=3.8
   - pyyaml
   - sqlalchemy
